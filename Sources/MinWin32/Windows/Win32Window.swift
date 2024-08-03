@@ -97,6 +97,8 @@ open class Win32Window {
 
     }
 
+    // MARK: Messaging
+
     // MARK: Display
 
     /// Displays this window on the screen.
@@ -131,24 +133,13 @@ open class Win32Window {
     }
 
     open func setNeedsLayout() {
-        guard needsLayout == false else { return }
         needsLayout = true
 
-        RunLoop.main.perform { [weak self] in
-            guard let self = self else { return }
-
-            while self.needsLayout {
-                self.onLayout()
-            }
-        }
+        postMessage(LayoutMessage())
     }
 
     open func clearNeedsLayout() {
         needsLayout = false
-    }
-
-    open func clearNeedsDisplay() {
-        needsDisplay = false
     }
 
     open func setNeedsDisplay() {
@@ -162,11 +153,25 @@ open class Win32Window {
         needsDisplay = true
     }
 
+    open func clearNeedsDisplay() {
+        needsDisplay = false
+    }
+
     // MARK: Events
 
-    /// Posts a private message to this window's message queue.
-    public func postMessage(_ message: CustomMessage) {
+    /// Posts a message to this window's message queue.
+    open func postMessage(_ message: CustomMessage) {
         PostMessageW(hwnd, message.uMsg, message.wParam, message.lParam)
+    }
+
+    /// Sends a message to this window's message queue, blocking until the message
+    /// is processed.
+    ///
+    /// If the message is being sent by the same thread as `MinWin32App` or other
+    /// message-handling loop that is handling this window's message, the message
+    /// is handled immediately as a subroutine.
+    open func sendMessage(_ message: any CustomMessage) {
+        SendMessageW(hwnd, message.uMsg, message.wParam, message.lParam)
     }
 
     // MARK: Layout events
@@ -462,6 +467,10 @@ fileprivate extension Win32Window {
 
         switch Int32(uMsg) {
 
+        // MARK: Custom messages
+        case Int32(bitPattern: LayoutMessage.messageHandle):
+            return 0
+
         // MARK: Native messages
         case WM_DESTROY:
             onClose(message)
@@ -473,7 +482,7 @@ fileprivate extension Win32Window {
 
         case WM_PAINT:
             // If layout is required and hasn't happened yet, do it before rendering.
-            if needsLayout {
+            while needsLayout {
                 onLayout()
             }
             onPaint(message)

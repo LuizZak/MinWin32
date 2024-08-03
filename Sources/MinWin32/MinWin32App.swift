@@ -33,6 +33,11 @@ open class MinWin32App {
     /// Subclasses should call this method as the last statement and return its
     /// return value.
     open func run() throws -> Int32 {
+        // Register custom messages
+        for custom in CustomMessages.allMessages {
+            try custom.registerOnce()
+        }
+
         // Initialize COM
         do {
             try CoInitializeEx(COINIT_MULTITHREADED)
