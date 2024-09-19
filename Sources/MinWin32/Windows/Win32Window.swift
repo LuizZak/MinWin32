@@ -182,6 +182,25 @@ open class Win32Window {
         clearNeedsLayout()
     }
 
+    // MARK: Invalidation events
+
+    /// Called when the window has received a `MW32_INVALIDATE` message.
+    open func onInvalidate(_ message: InvalidateMessage) {
+        let x = LOWORD(message.wParam)
+        let y = HIWORD(message.wParam)
+        let width = LOWORD(message.lParam)
+        let height = HIWORD(message.lParam)
+
+        var rect = RECT(
+            left: LONG(x),
+            top: LONG(y),
+            right: LONG(x + width),
+            bottom: LONG(y + height)
+        )
+        InvalidateRect(hwnd, &rect, false)
+        needsDisplay = true
+    }
+
     // MARK: Window events
 
     /// Called when the window has received a `WM_DESTROY` message.
@@ -469,6 +488,11 @@ fileprivate extension Win32Window {
 
         // MARK: Custom messages
         case Int32(bitPattern: LayoutMessage.messageHandle):
+            return 0
+
+        case Int32(bitPattern: InvalidateMessage.messageHandle):
+            let msg = InvalidateMessage(uMsg: uMsg, wParam: wParam, lParam: lParam)
+            onInvalidate(msg)
             return 0
 
         // MARK: Native messages
