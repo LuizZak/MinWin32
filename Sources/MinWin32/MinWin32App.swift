@@ -7,6 +7,7 @@ import SwiftCOM
 /// Contains event handling and a built-in minimal RunLoop support.
 open class MinWin32App {
     public let delegate: MinWin32AppDelegate
+    public var mainLoopBehavior: MainLoopMode = .wait
 
     public init(delegate: MinWin32AppDelegate) {
         self.delegate = delegate
@@ -111,14 +112,20 @@ open class MinWin32App {
                 // continue to the next iteration.
             } while (time?.timeIntervalSinceNow ?? -1) <= 0
 
-            // Yield control to the system until the earlier of a requisite timer
-            // expiration or a message is posted to the runloop.
-            _ = MsgWaitForMultipleObjects(
-                0, nil, false,
-                DWORD(exactly: time?.timeIntervalSinceNow ?? -1)
-                    ?? INFINITE,
-                QS_ALLINPUT | DWORD(QS_KEY) | QS_MOUSE | DWORD(QS_RAWINPUT)
-            )
+            switch mainLoopBehavior {
+            case .wait:
+                // Yield control to the system until the earlier of a requisite timer
+                // expiration or a message is posted to the runloop.
+                _ = MsgWaitForMultipleObjects(
+                    0, nil, false,
+                    DWORD(exactly: time?.timeIntervalSinceNow ?? -1)
+                        ?? INFINITE,
+                    QS_ALLINPUT | DWORD(QS_KEY) | QS_MOUSE | DWORD(QS_RAWINPUT)
+                )
+
+            case .realTime:
+                break
+            }
         }
 
         return nExitCode
@@ -130,6 +137,20 @@ open class MinWin32App {
 
     internal func didMoveToBackground() {
         delegate.appDidMoveToBackground()
+    }
+
+    /// Describes the desired behavior of the main UI loop of the application.
+    public enum MainLoopMode {
+        /// The end of the loop is gated with a wait operation for further events
+        /// and timers. Leads to a less busy run loop.
+        ///
+        /// This is the default main loop behavior.
+        case wait
+
+        /// The end of the loop is not gated, and loops back to the start of the
+        /// message pump immediately. Suitable for real-time applications that
+        /// require constant loops.
+        case realTime
     }
 }
 
@@ -144,27 +165,4 @@ private let pApplicationStateChangeRoutine: PAPPSTATE_CHANGE_ROUTINE = { (quiesc
     } else {
         app.didMoveToBackground()
     }
-}
-
-// Waits for a message on the message queue, returning when either a message has
-// arrived or the timeout specified has expired.
-private func WaitMessage(limitDate: Date?) -> Bool {
-    guard let limitDate = limitDate else {
-        return WaitMessage(.max)
-    }
-    guard limitDate.timeIntervalSinceNow < Double(DWORD.max) else {
-        return WaitMessage(.max)
-    }
-
-    let milliseconds = DWORD(limitDate.timeIntervalSinceNow * 1000)
-    return WaitMessage(milliseconds)
-}
-
-// Waits for a message on the message queue, returning when either a message has
-// arrived or the timeout specified has expired.
-private func WaitMessage(_ dwMilliseconds: UINT) -> Bool {
-    let uIDEvent = WinSDK.SetTimer(nil, 0, dwMilliseconds, nil)
-    defer { WinSDK.KillTimer(nil, uIDEvent) }
-
-    return WinSDK.WaitMessage()
 }
