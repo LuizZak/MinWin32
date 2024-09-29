@@ -23,10 +23,12 @@ open class MinWin32App {
     /// Marks the program as finished executing and quits.
     /// The program is not quit immediately, and may still process events after
     /// the quit request before closing.
-    public func requestQuit() {
+    open func requestQuit() {
         WinLogger.info("Application requested termination.")
 
-        PostQuitMessage(0)
+        dispatchMain {
+            PostQuitMessage(0)
+        }
     }
 
     /// Initializes the main run loop of the application.

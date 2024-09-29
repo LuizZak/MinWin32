@@ -1,6 +1,6 @@
 import WinSDK
 
-public struct Win32Keys: Hashable {
+public struct Win32Keys: Hashable, @unchecked Sendable {
     public var rawValue: Int
 
     @_transparent

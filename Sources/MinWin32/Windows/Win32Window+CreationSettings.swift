@@ -1,6 +1,6 @@
 extension Win32Window {
     /// Settings used to create the window in the Win32 APIs.
-    public struct CreationSettings {
+    public struct CreationSettings: @unchecked Sendable {
         /// Window's initial display title.
         public var title: String
 
@@ -24,7 +24,7 @@ extension Win32Window {
 
     /// Specifies the desired initial position of a Win32Window as its shown on
     /// screen.
-    public enum InitialPosition {
+    public enum InitialPosition: Sendable {
         /// Position is specified by the system, and not changed.
         case `default`
 

@@ -1,4 +1,4 @@
-public struct Win32KeyPressEventArgs {
+public struct Win32KeyPressEventArgs: @unchecked Sendable {
     public let keyChar: Character
     public let modifiers: Win32KeyboardModifier
 

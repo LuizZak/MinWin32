@@ -1,4 +1,4 @@
-public struct Win32KeyboardModifier: OptionSet {
+public struct Win32KeyboardModifier: OptionSet, Sendable {
     public var rawValue: Int
 
     @_transparent

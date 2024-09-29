@@ -1,6 +1,6 @@
 import WinSDK
 
-public struct WindowMessage {
+public struct WindowMessage: @unchecked Sendable {
     public var uMsg: UINT
     public var wParam: WPARAM
     public var lParam: LPARAM
